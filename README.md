@@ -7,6 +7,10 @@ Due to the limited public implementations in the field of lifelong/online log an
 ```
 pip install -r requirements.txt
 ```
+or
+```
+pip install torch logparser3
+```
 
 ## Download Datasets
 1. Download and extract HDFS dataset from [here](https://zenodo.org/records/8196385)
