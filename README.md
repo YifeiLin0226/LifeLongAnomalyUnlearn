@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 ## Download Datasets
 1. Download and extract HDFS dataset from [here](https://zenodo.org/records/8196385)
-2. In main.py, set the input_dir to the directory of HDFS.log, set the out_dir to the directory of storing the parsed and processed data.
+2. In main.py, set the **input_dir** to the directory of **HDFS.log**, set the **out_dir** to the directory of storing the parsed and processed data.
    ```
    input_dir =   
    output_dir =
@@ -20,4 +20,4 @@ pip install -r requirements.txt
 ```
 python -m main
 ```
-Feel free to adjust the params in options variable
+Feel free to adjust the params in **options** variable
