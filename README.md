@@ -16,7 +16,7 @@ pip install -r requirements.txt
    output_dir =
    ```
 
-## Run training + unlearning
+## Run the program
 ```
 python -m main
 ```
