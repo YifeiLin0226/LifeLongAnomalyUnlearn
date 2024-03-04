@@ -79,11 +79,11 @@ def test(dataset, model, options):
             next_ids = next_ids.to(device)
 
             outputs = model(windowed_sequences, device)
-            loss = criterion(outputs, next_ids)
+            prob = nn.functional.softmax(outputs, dim = 1)
 
             pred_anomaly = False
-            for j in range(len(loss)):
-                if loss[j] > options['thre']:
+            for j in range(len(prob)):
+                if prob[j][next_ids[j]] < options['thre']:
                     pred_anomaly = True
                     break
             
@@ -117,9 +117,8 @@ def test(dataset, model, options):
 
 def unlearn(windowed_sequences, next, label, model, options):
     lt = label * 2 - 1
-    threshold = options['thre']
     lamb = options['lamb']
-    BND = 2 * threshold
+    BND = options['BND']
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     old_params = [param.clone() for param in model.parameters()]
@@ -157,7 +156,7 @@ st         = 0.5  # Similarity threshold
 depth      = 5  # Depth of all leaf nodes
 config = {'st': st, 'depth': depth}
 
-options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 10**-4, 'lamb': 5 * 10**3, 'unlearn_epochs': 10, 'window_size': 11, 'unlearn': True}
+options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 10**-5, 'BND': 10, 'lamb': 5 * 10**3, 'unlearn_epochs': 10, 'window_size': 11, 'unlearn': True}
 
 # parser = Parser(input_dir, output_dir, dataset, parser_name, config)
 # parser.parse()
@@ -165,15 +164,18 @@ options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 10**-4, 'la
 # processor = LogDataProcessor(output_dir, output_dir, dataset, 'session')
 # processor.process(n_train = 4855)
 
-dataset = LogDataset(output_dir, options['window_size'], mode = 'train')
-dataLoader = DataLoader(dataset, batch_size = 32, shuffle = True, collate_fn = dataset.collate_fn)
-model = deeplog(1, 128, 2, dataset.vocab.size())
+# dataset = LogDataset(output_dir, options['window_size'], mode = 'train')
+# dataLoader = DataLoader(dataset, batch_size = 32, shuffle = True, collate_fn = dataset.collate_fn)
+# model = deeplog(1, 128, 2, dataset.vocab.size())
 
 
-model = train(dataLoader, model, options)
-torch.save(model.state_dict(), 'deeplog.pth')
+# model = train(dataLoader, model, options)
+# torch.save(model.state_dict(), 'deeplog.pth')
+
 
 dataset = LogDataset(output_dir, options['window_size'], mode = 'test')
+model = deeplog(1, 128, 2, dataset.vocab.size())
+model.load_state_dict(torch.load('deeplog.pth'))
 test(dataset, model, options)
 
 
