@@ -52,6 +52,7 @@ def test(dataset, model, options):
     window_size = options['window_size']
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
+    criterion = nn.CrossEntropyLoss(reduction = 'none')
 
     for i in tqdm(range(len(dataset))):
         with torch.no_grad(): 
@@ -78,12 +79,11 @@ def test(dataset, model, options):
             next_ids = next_ids.to(device)
 
             outputs = model(windowed_sequences, device)
-            _, predicted = torch.max(outputs, 1)
-            predicted = nn.functional.softmax(outputs, dim = 1)
+            loss = criterion(outputs, next_ids)
 
             pred_anomaly = False
-            for j in range(len(predicted)):
-                if predicted[j][next_ids[j]] < options['thre']:
+            for j in range(len(loss)):
+                if loss[j] > options['thre']:
                     pred_anomaly = True
                     break
             
@@ -157,7 +157,7 @@ st         = 0.5  # Similarity threshold
 depth      = 5  # Depth of all leaf nodes
 config = {'st': st, 'depth': depth}
 
-options = {'lr': 0.1, 'unlearn_lr': 10**-5, 'epochs': 1, 'thre': 10**-4, 'lamb': 5 * 10**3, 'unlearn_epochs': 10, 'window_size': 11, 'unlearn': True}
+options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 10**-4, 'lamb': 5 * 10**3, 'unlearn_epochs': 10, 'window_size': 11, 'unlearn': True}
 
 # parser = Parser(input_dir, output_dir, dataset, parser_name, config)
 # parser.parse()
