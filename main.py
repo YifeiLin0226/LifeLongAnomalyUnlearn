@@ -21,14 +21,19 @@ def seed_all(seed = 0):
 def train(dataLoader, model, options):
     model.train()
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr = options['lr'])
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
+    lr = options['lr']
+    optimizer = torch.optim.Adam(model.parameters(), lr = lr)
     for epoch in range(options['epochs']):
+        if epoch % 100 == 0:
+            lr *= 0.1
+            optimizer = torch.optim.Adam(model.parameters(), lr = lr)
         total_loss = 0
         num_samples = 0
-        for i, sample in enumerate(tqdm(dataLoader)):
-            event_sequences, next_ids = sample
+        for i, batch in enumerate(tqdm(dataLoader)):
+            event_sequences = batch[0]
+            next_ids = batch[1]
             event_sequences = event_sequences.to(device)
             next_ids = next_ids.to(device)
             outputs = model(event_sequences, device)
@@ -52,7 +57,6 @@ def test(dataset, model, options):
     window_size = options['window_size']
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    criterion = nn.CrossEntropyLoss(reduction = 'none')
 
     for i in tqdm(range(len(dataset))):
         with torch.no_grad(): 
@@ -65,11 +69,11 @@ def test(dataset, model, options):
             label = sample[1]
             windowed_sequences = []
             next_ids = []
-            for j in range(ceil(len(event_sequence) / window_size)):
-                if len(event_sequence[j*window_size:(j+1)*window_size]) < 2:
+            for j in range(max(len(event_sequence) - window_size, 0) + 1):
+                if len(event_sequence[j : j + window_size]) < 2:
                     continue
 
-                temp = event_sequence[j*window_size:(j+1)*window_size]
+                temp = event_sequence[j : j + window_size]
                 windowed_sequences.append(temp[:-1])
                 next_ids.append(temp[-1])
 
@@ -156,7 +160,7 @@ st         = 0.5  # Similarity threshold
 depth      = 5  # Depth of all leaf nodes
 config = {'st': st, 'depth': depth}
 
-options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 10**-5, 'BND': 10, 'lamb': 5 * 10**3, 'unlearn_epochs': 10, 'window_size': 11, 'unlearn': True}
+options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 0.2, 'BND': 8, 'lamb': 5 * 10**3, 'unlearn_epochs': 10, 'window_size': 11, 'unlearn': True}
 
 # parser = Parser(input_dir, output_dir, dataset, parser_name, config)
 # parser.parse()
@@ -175,8 +179,15 @@ options = {'lr': 0.001, 'unlearn_lr': 10**-5, 'epochs': 300, 'thre': 10**-5, 'BN
 
 dataset = LogDataset(output_dir, options['window_size'], mode = 'test')
 model = deeplog(1, 128, 2, dataset.vocab.size())
-model.load_state_dict(torch.load('deeplog.pth'))
-test(dataset, model, options)
+model.load_state_dict(torch.load('deeplog.pth')) 
+for thre in [10**-5, 10**-2, 0.1, 0.2, 0.3, 0.4, 0.5]:
+    options['thre'] = thre
+    for BND in [1, 2, 4, 8, 16, 32, 64]:
+        model.load_state_dict(torch.load('deeplog.pth')) 
+        options['BND'] = BND
+        print(f'Threshold: {thre}, BND: {BND}')
+        test(dataset, model, options)
+        print()
 
 
 

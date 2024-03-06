@@ -43,21 +43,15 @@ class LogDataset(Dataset):
     def window(self):
         new_data = []
         for sample in self.data:
-            for i in range(ceil(len(sample['EventTemplate']) / self.window_size)):
-                if len(sample['EventTemplate'][i*self.window_size:(i+1)*self.window_size]) < 2:
+            for i in range(max(len(sample['EventTemplate']) - self.window_size, 0) + 1):
+                if len(sample['EventTemplate'][i : i + self.window_size]) < 2:
                     continue
-
-                if self.mode == 'train':
-                    new_data.append({
-                        'BlockId': sample['BlockId'],
-                        'EventTemplate': sample['EventTemplate'][i*self.window_size:(i+1)*self.window_size]
-                    })
-                else:
-                    new_data.append({
-                        'BlockId': sample['BlockId'],
-                        'EventTemplate': sample['EventTemplate'][i*self.window_size:(i+1)*self.window_size],
-                        'Label': sample['Label']
-                    })
+                
+                new_data.append({
+                    'BlockId': sample['BlockId'],
+                    'EventTemplate': sample['EventTemplate'][i : i + self.window_size]
+                })
+               
         
         return new_data
 
@@ -77,10 +71,11 @@ class LogDataset(Dataset):
     def collate_fn(self, batch):
         if self.mode == 'train':
             event_sequences = [item[:-1] for item in batch]
-            next_ids = [item[-1] for item in batch]
+            next_event_ids = [item[-1] for item in batch]
             event_sequences = nn.utils.rnn.pad_sequence(event_sequences, batch_first=True, padding_value = self.vocab.word_to_id('<pad>'))
-            next_ids = torch.stack(next_ids)
-            return event_sequences, next_ids
+            next_event_ids = torch.tensor(next_event_ids)
+            
+            return event_sequences, next_event_ids
         
        
         
