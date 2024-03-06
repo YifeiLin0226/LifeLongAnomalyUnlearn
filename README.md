@@ -3,7 +3,7 @@ An unofficial implementation of Lifelong Anomaly Detection Through Unlearning(CC
 
 Due to the limited public implementations in the field of lifelong/online log anomaly detection, this repo is created for the study purpose and only the implementation with the HDFS log dataset is made. You are more than welcome to share your insights and point out any code issues.
 
-Currently I am still unable to get satifactory experimental results, potentially due to the wrong model structure or hyparameter selection.
+Currently I am still unable to get satifactory experimental results, potentially due to the wrong model structure or hyparameter selection. The weight $w_i$ is not added to unlearning due to the computation of the gradient over all the samples from the memory set $M_t$.
 
 ## Install Requirements
 ```
